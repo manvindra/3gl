@@ -1,9 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE HTML>
+<html>
+	<title> webgl tut </title>
 <head>
-	<title>VR PHOTO</title>
-	<style>
-		body {
+    <title>Basic Breakdown of </title>
+    <style>
+        body {
             padding:0;
 				margin:0;
 				overflow:hidden;
@@ -21,28 +22,47 @@
 			  right: 0;
 			  bottom: 0;
 		}
-    </style>	
+		
+
+    </style>
 </head>
 <body>
-	<div id="container"></div>
-	<div id="sphere"></div>
-	<script src="js/three.min.js"></script>
-	<script src="js/OrbitControls.js"></script>	
-	<script src="js/Detector.js"></script>
-	<script src="js/StereoEffect.js"></script>
-	<script src="js/DeviceOrientationControls.js"></script>
-	<script src="js/CardboardEffect.js"></script>	
-	<script type="text/javascript">
-	 var clock = new THREE.Clock();
-	 var container, scene, camera, renderer, controls, stats,cameraPosition,effect;
+
+<div id="container"></div>
+
+<script src="js/three.min.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/FresnelShader.js"></script>
+<script src="js/Projector.js"></script>
+<script src="js/Raycaster.js"></script>
+<script src="js/StereoEffect.js"></script>
+<script src="js/DeviceOrientationControls.js"></script>
+
+
+
+<script type="text/javascript">
+
+var container, scene, camera, renderer, controls, stats,cameraPosition;
+var rightwall_mesh =new THREE.Mesh();
+var objects = [], plane;
+var clock = new THREE.Clock();
+var raycaster = new THREE.Raycaster();
+// custom global variables
+
+var projector, mouse = { x: 0, y: 0 };
 function init() 
 {
     scene = new THREE.Scene();
+	
+	var loader = new THREE.JSONLoader();
 	// RENDERER
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setPixelRatio( window.devicePixelRatio );
+	var DPR = (window.devicePixelRatio) ? window.devicePixelRatio : 1;
+	var WW = window.innerWidth;
+	var HH = window.innerHeight;
 	renderer.setSize( window.innerWidth, window.innerHeight );
-	//renderer.setViewport( 0, 0, WW*DPR, HH*DPR );
+	renderer.setViewport( 0, 0, WW*DPR, HH*DPR );
 	renderer.gammaInput = true;
 	renderer.gammaOutput = true;
 	//renderer.setClearColor(0xaabbff,1);
@@ -51,31 +71,284 @@ function init()
 	container.appendChild(element);
     // CAMERA
 	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
-	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 1, FAR = 10000;
+	var VIEW_ANGLE = 60, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 1, FAR = 10000;
 	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, window.innerWidth / window.innerHeight, 1, 10000);
-
+	camera.position.set(0,700,0);
+	camera.lookAt(scene.position);
+	
 	effect = new THREE.StereoEffect(renderer);
-	effect.setSize( window.innerWidth, window.innerHeight );
+	
+	
+    
 	// CONTROLS
 	controls = new THREE.OrbitControls(camera, element);
-	controls.noPan = true;
-	controls.noZoom = true; 
 	controls.target.set(
     camera.position.x + 300,
     camera.position.y + 5,
     camera.position.z + 30
 	);
+	controls.noPan = true;
+	controls.noZoom = true;
+	
+	// LIGHTS
+	//addLights();
+	
+	// initialize object to perform world/screen calculations
+	projector = new THREE.Projector();
+	//projector = new THREE.Projector();
+	mouseVector = new THREE.Vector3();
+	// when the mouse moves, call the given function
+	//document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	var urlPrefix = "js/livroom/sky_";
+    var urls = [ urlPrefix + "0.jpg", urlPrefix + "1.jpg",
+    urlPrefix + "2.jpg", urlPrefix + "3.jpg",
+    urlPrefix + "4.jpg", urlPrefix + "5.jpg" ];
+    var cubemap = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeReflectionMapping );
+    cubemap.format = THREE.RGBFormat;
+	var smaterial = new THREE.MeshPhongMaterial();
+	smaterial.envmap = cubemap;
+	var skybox = new THREE.Mesh( new THREE.SphereGeometry( 10000,32,32 ), smaterial );
+	scene.add( skybox );
+	var wood = new THREE.TextureLoader().load( "js/wood_diffuse_12.jpg" );
+	var red_cloth = new THREE.TextureLoader().load( "js/cloth_10.jpg" );
+	var green_cloth = new THREE.TextureLoader().load( "js/cloth_3.jpg" );
+	var arabian_marfil = new THREE.TextureLoader().load( "js/arabian_marfil.jpg" );
+	var cotto = new THREE.TextureLoader().load( "js/cotto.jpg" );
+	var cotto2 = new THREE.TextureLoader().load( "js/cotto.jpg" );
+	cotto.magFilter = THREE.NearestFilter;
+	cotto.minFilter = THREE.LinearMipMapLinearFilter;
+	green_cloth.magFilter = THREE.NearestFilter;
+	green_cloth.minFilter = THREE.LinearMipMapLinearFilter;
+	cotto2.magFilter = THREE.NearestFilter;
+	cotto2.minFilter = THREE.LinearMipMapLinearFilter;
+	
+	wood.wrapS = wood.wrapT = THREE.RepeatWrapping;
+	wood.repeat.set(3,3);
+	red_cloth.wrapS = red_cloth.wrapT = THREE.RepeatWrapping;
+	red_cloth.repeat.set(10,10);
+	green_cloth.wrapS = green_cloth.wrapT = THREE.RepeatWrapping;
+	green_cloth.repeat.set(10,10);
+	arabian_marfil.wrapS = arabian_marfil.wrapT = THREE.RepeatWrapping;
+	arabian_marfil.repeat.set(4,7);
+	cotto.wrapS = cotto.wrapT = THREE.RepeatWrapping;
+	cotto.repeat.set(24,24);
+	cotto2.wrapS = cotto2.wrapT = THREE.RepeatWrapping;
+	cotto2.repeat.set(10,10);
+	
 
-	var sphere = new THREE.Mesh(
-		new THREE.SphereGeometry(2000, 600, 400),
-		new THREE.MeshBasicMaterial({
-			map: THREE.ImageUtils.loadTexture('app8.jpg')
-		})
-	);
-	sphere.scale.x = -1;
-	scene.add(sphere);
-		
-		function setOrientationControls(e) {
+	var floor = new THREE.TextureLoader().load('js/livroom/floor.jpg');
+	var backwall = new THREE.TextureLoader().load('js/livroom/backwall.jpg');
+	var frontwall = new THREE.TextureLoader().load('js/livroom/frontwall.jpg');
+	var leftwall = new THREE.TextureLoader().load('js/livroom/leftwall.jpg');
+	var rightwall = new THREE.TextureLoader().load('js/livroom/rightwall.jpg');
+	
+	var balcony_floor = new THREE.TextureLoader().load('js/livroom/balcony_floor.jpg');
+	var chair_cloth = new THREE.TextureLoader().load('js/livroom/chair_cloth.jpg');
+	var flowers = new THREE.TextureLoader().load('js/livroom/flowers.jpg');
+	var pillow = new THREE.TextureLoader().load('js/livroom/pillow.jpg');
+	var tv = new THREE.TextureLoader().load('js/livroom/tv.jpg');
+	var tv_box = new THREE.TextureLoader().load('js/livroom/tv_box.jpg');
+	var pillow = new THREE.TextureLoader().load('js/livroom/pillow.jpg');
+	
+	
+	var showpiece = new THREE.TextureLoader().load('js/livroom/showpiece.jpg');
+	var sofa = new THREE.TextureLoader().load('js/livroom/sofa.jpg');
+	sofa.magFilter = THREE.NearestFilter;
+	sofa.minFilter = THREE.LinearMipMapLinearFilter;
+	var table = new THREE.TextureLoader().load('js/livroom/table.jpg');
+	var curtain1 = new THREE.TextureLoader().load('js/livroom/curtain1.jpg');
+	
+	var frills = new THREE.TextureLoader().load('js/livroom/frills.jpg');
+	var lamp = new THREE.TextureLoader().load('js/livroom/lamp.jpg');
+	var lamp_support = new THREE.TextureLoader().load('js/livroom/lamp_support.jpg');
+	var roof = new THREE.TextureLoader().load('js/livroom/roof.jpg');
+	var master_roof = new THREE.TextureLoader().load('js/livroom/master_roof.jpg');
+	
+	
+	
+	var axisHelper = new THREE.AxisHelper( 300); 
+	//scene.add( axisHelper );
+	//roof
+	loader.load('js/livroom/roof.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = roof;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	roof_mesh = new THREE.Mesh( geometry, material );
+	scene.add(roof_mesh);		
+	});
+	//master_roof
+	loader.load('js/livroom/master_roof.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = master_roof;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	master_roof_mesh = new THREE.Mesh( geometry, material );
+	scene.add(master_roof_mesh);		
+	});
+	//lamp
+	loader.load('js/livroom/lamp.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = lamp;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	lamp_mesh = new THREE.Mesh( geometry, material );
+	scene.add(lamp_mesh);		
+	});
+	//lamp_support
+	loader.load('js/livroom/lamp_support.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = lamp_support;
+	material.envMap=cubemap;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	lamp_support_mesh = new THREE.Mesh( geometry, material );
+	scene.add(lamp_support_mesh);		
+	});
+	//curtain1
+	loader.load('js/livroom/curtain1.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:red_cloth});
+	material.lightMap = curtain1;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	curtain1_mesh = new THREE.Mesh( geometry, material );
+	scene.add(curtain1_mesh);		
+	});
+	//frills
+	loader.load('js/livroom/frills.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = frills;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	frills_mesh = new THREE.Mesh( geometry, material );
+	scene.add(frills_mesh);		
+	});
+	
+	//tv
+	loader.load('js/livroom/tv.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = tv;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	tv_stand_mesh = new THREE.Mesh( geometry, material );
+	scene.add(tv_stand_mesh);		
+	});
+	//tv_box
+	loader.load('js/livroom/tv_box.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:wood} );
+	material.lightMap = tv_box;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	tv_box_mesh = new THREE.Mesh( geometry, material );
+	scene.add(tv_box_mesh);		
+	});
+
+	//table
+	loader.load('js/livroom/table.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:wood} );
+	material.lightMap = table;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	table_mesh = new THREE.Mesh( geometry, material );
+	scene.add( table_mesh );		
+	});
+	//pillow
+	loader.load('js/livroom/pillow.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:green_cloth});
+	material.lightMap = pillow;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	pillow_mesh = new THREE.Mesh( geometry, material );
+	scene.add( pillow_mesh );		
+	});
+	//showpiece
+	loader.load('js/livroom/showpiece.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = showpiece;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	showpiece_mesh = new THREE.Mesh( geometry, material );
+	scene.add( showpiece_mesh );		
+	});
+	//sofa
+	loader.load('js/livroom/sofa.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:green_cloth});
+	material.lightMap = sofa;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	sofa_mesh = new THREE.Mesh( geometry, material );
+	scene.add( sofa_mesh );		
+	});
+	//balcony_floor
+	loader.load('js/livroom/balcony_floor.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:cotto2});
+	material.lightMap = balcony_floor;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	balcony_floor_mesh = new THREE.Mesh( geometry, material );
+	scene.add( balcony_floor_mesh );		
+	});
+	//chair_cloth
+	loader.load('js/livroom/chair_cloth.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:green_cloth});
+	material.lightMap = chair_cloth;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	 chair_cloth_mesh  = new THREE.Mesh( geometry, material );
+	scene.add( chair_cloth_mesh );		
+	});
+	
+	//flowers
+	loader.load('js/livroom/flowers.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = flowers;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	flowers_mesh = new THREE.Mesh( geometry, material );
+	scene.add( flowers_mesh );		
+	});
+	//rightwall
+	loader.load('js/livroom/rightwall.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( { color: 0xfdedd0 });
+	material.lightMap = rightwall;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	rightwall_mesh = new THREE.Mesh( geometry, material );
+	scene.add( rightwall_mesh );		
+	});
+
+	//leftwall
+	loader.load('js/livroom/leftwall.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( {map:arabian_marfil} );
+	material.lightMap = leftwall;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	var leftwall_mesh = new THREE.Mesh( geometry, material );
+	//leftwall_mesh.scale.set( 2, 2, 2 );
+	scene.add( leftwall_mesh );
+	});
+	//frontwall
+	loader.load('js/livroom/frontwall.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( { color: 0xfdedd0 } );
+	material.lightMap = frontwall;
+	//assignUVyz(geometry);
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	var frontwall_mesh = new THREE.Mesh( geometry, material );
+	//frontwall_mesh.scale.set( 2, 2, 2 );
+	scene.add( frontwall_mesh );
+	});
+	//floor
+	loader.load('js/livroom/floor.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial({map:cotto} );
+	material.lightMap = floor;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	var floor_mesh = new THREE.Mesh( geometry, material );
+	//floor_mesh.scale.set( 2, 2, 2 );
+	scene.add( floor_mesh );
+	});
+	//backwall
+	loader.load('js/livroom/backwall.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial( { color: 0xFF634D } );
+	material.lightMap = backwall;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	var backwall_mesh = new THREE.Mesh( geometry, material );
+	//backwall_mesh.scale.set( 2, 2, 2 );
+	scene.add( backwall_mesh );
+	});
+	//roof
+	loader.load('js/livroom/roof.js', function (geometry) {
+	var material = new THREE.MeshPhongMaterial();
+	material.lightMap = roof;
+	geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+	var roof_mesh = new THREE.Mesh( geometry, material );
+	//roof_mesh.scale.set( 2, 2, 2 );
+	scene.add( roof_mesh );
+	});
+	
+function setOrientationControls(e) {
 	        if (!e.alpha) {
 	          return;
 	        }
@@ -138,8 +411,11 @@ function resize() {
 	      }
 	    }
 
+
 init();
 animate();
-	</script>
+
+    
+</script>
 </body>
 </html>
