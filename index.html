@@ -136,6 +136,7 @@ function init()
 	cotto2.repeat.set(10,10);
 	
 
+<<<<<<< HEAD
 	var floor = new THREE.TextureLoader().load('js/livroom/floor.jpg');
 	var backwall = new THREE.TextureLoader().load('js/livroom/backwall.jpg');
 	var frontwall = new THREE.TextureLoader().load('js/livroom/frontwall.jpg');
@@ -349,6 +350,18 @@ function init()
 	});
 	
 function setOrientationControls(e) {
+=======
+	var sphere = new THREE.Mesh(
+		new THREE.SphereGeometry(2000, 600, 400),
+		new THREE.MeshBasicMaterial({
+			map: THREE.ImageUtils.loadTexture('app7.jpg')
+		})
+	);
+	sphere.scale.x = -1;
+	scene.add(sphere);
+		
+		function setOrientationControls(e) {
+>>>>>>> ade6ff1213bdf4dc9f2f2617ef19cad2b2c06c43
 	        if (!e.alpha) {
 	          return;
 	        }
