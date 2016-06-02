@@ -64,6 +64,7 @@ function init()
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	renderer.setViewport( 0, 0, WW*DPR, HH*DPR );
 	renderer.gammaInput = true;
+	renderer.logarithmicDepthBuffer=true;
 	renderer.gammaOutput = true;
 	//renderer.setClearColor(0xaabbff,1);
 	element = renderer.domElement;
@@ -71,7 +72,7 @@ function init()
 	container.appendChild(element);
     // CAMERA
 	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
-	var VIEW_ANGLE = 60, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 1, FAR = 10000;
+	var VIEW_ANGLE = 60, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 10, FAR = 10000;
 	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, window.innerWidth / window.innerHeight, 1, 10000);
 	camera.position.set(0,700,0);
 	camera.lookAt(scene.position);
